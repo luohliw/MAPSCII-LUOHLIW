@@ -14,19 +14,19 @@ const argv = require( 'yargs' )
   .option( 'latitude', {
     alias: 'lat',
     description: 'Latitude of initial centre',
-    /* default: config.initialLat, */
+    default: config.initialLat,
     type: 'number'
   } )
   .option( 'longitude', {
     alias: 'lon',
     description: 'Longitude of initial centre',
-    /* default: config.initialLon, */
+    default: config.initialLon,
     type: 'number'
   } )
   .option( 'zoom', {
     alias: 'z',
     description: 'Initial zoom',
-    /* default: config.initialZoom, */
+    default: config.initialZoom,
     type: 'number'
   } )
   .option( 'width', {
