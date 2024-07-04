@@ -5,9 +5,9 @@ module.exports = {
   // mapscii.me hosts the last available version, 2016-06-20
   source: 'http://mapscii.me/',
 
-  //source: __dirname+"/../mbtiles/regensburg.mbtiles",
+  // source: __dirname+"/../mbtiles/regensburg.mbtiles",
 
-  styleFile: __dirname+'/../styles/dark.json',
+  styleFile: __dirname + '/../styles/dark.json',
 
   initialZoom: null,
   maxZoom: 18,
@@ -38,14 +38,14 @@ module.exports = {
     },
     poi_label: {
       cluster: true,
-      margin: 5,
+      margin: 5
     },
     place_label: {
-      cluster: true,
+      cluster: true
     },
     state_label: {
-      cluster: true,
-    },
+      cluster: true
+    }
   },
 
   input: process.stdin,
@@ -55,5 +55,5 @@ module.exports = {
 
   delimeter: '\n\r',
 
-  poiMarker: '◉',
-};
+  poiMarker: '◉'
+}
