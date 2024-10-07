@@ -27,7 +27,7 @@ If you're on Windows, use the open source telnet client [PuTTY](https://www.chia
 ## How to run it locally
 
 With a modern node installation available, just start it with
-
+ououoi
 ```
 npx mapscii
 ```
