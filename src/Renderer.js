@@ -8,7 +8,7 @@
 const x256 = require('x256');
 const simplify = require('simplify-js');
 //😃😃😃😃😃😃😃😃😃😃😃
-const Canvas = require('./Canvas');
+const Canvas = require('./Portrait');
 const LabelBuffer = require('./LabelBuffer');
 const Styler = require('./Styler');
 const utils = require('./utils');
