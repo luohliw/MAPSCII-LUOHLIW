@@ -1,4 +1,4 @@
-ori est passé par là
+ori est passé par ici
 
 # MapSCII - The Whole World In Your Console. [![Build Status](https://travis-ci.com/rastapasta/mapscii.svg?branch=master)](https://travis-ci.com/rastapasta/mapscii)
 
