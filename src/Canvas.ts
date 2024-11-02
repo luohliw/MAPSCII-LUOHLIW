@@ -10,13 +10,17 @@
 
   Will most likely be turned into a stand alone module at some point
  */
-'use strict';
-const bresenham = require('bresenham');
-const earcut = require('earcut');
-const BrailleBuffer = require('./BrailleBuffer');
+import bresenham from 'bresenham';
+import earcut from 'earcut';
+import BrailleBuffer from './BrailleBuffer';
 
 class Canvas {
-  constructor(width, height) {
+  private buffer: BrailleBuffer;
+  private height: number;
+  private stack: unknown[] = [];
+  private width: number;
+
+  constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
     this.buffer = new BrailleBuffer(width, height);
@@ -30,7 +34,7 @@ class Canvas {
     this.buffer.clear();
   }
 
-  text(text, x, y, color, center = false) {
+  text(text: string, x: number, y: number, color, center = false) {
     this.buffer.writeText(text, x, y, color, center);
   }
 
@@ -55,8 +59,8 @@ class Canvas {
   }
 
   polygon(rings, color) {
-    const vertices = [];
-    const holes = [];
+    const vertices: number[] = [];
+    const holes: number[] = [];
     for (const ring of rings) {
       if (vertices.length) {
         if (ring.length < 3) continue;
@@ -197,6 +201,4 @@ class Canvas {
   }
 }
 
-Canvas.prototype.stack = [];
-
-module.exports = Canvas;
+export default Canvas;

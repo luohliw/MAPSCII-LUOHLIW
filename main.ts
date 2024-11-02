@@ -7,10 +7,12 @@
 
   TODO: params parsing and so on
 #*/
-'use strict';
-const config = require('./src/config');
-const Mapscii = require('./src/Mapscii');
-const argv = require('yargs')
+import config from './src/config';
+import Mapscii from './src/Mapscii';
+import yargs from 'yargs/yargs';
+import { hideBin } from 'yargs/helpers';
+
+const argv = yargs(hideBin(process.argv))
   .option('latitude', {
     alias: 'lat',
     description: 'Latitude of initial centre',

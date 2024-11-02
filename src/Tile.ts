@@ -4,18 +4,22 @@
 
   Handling of and access to single VectorTiles
 */
-'use strict';
-const VectorTile = require('@mapbox/vector-tile').VectorTile;
-const Protobuf = require('pbf');
-const zlib = require('zlib');
-const RBush = require('rbush');
-const x256 = require('x256');
+import { VectorTile } from '@mapbox/vector-tile';
+import Protobuf from 'pbf';
+import zlib from 'zlib';
+import RBush from 'rbush';
+import x256 from 'x256';
 
-const config = require('./config');
-const utils = require('./utils');
+import config from './config';
+import utils from './utils';
+import Styler from './Styler';
 
 class Tile {
-  constructor(styler) {
+  public layers: any[];
+  private styler: Styler;
+  private tile: VectorTile;
+
+  constructor(styler: Styler) {
     this.styler = styler;
   }
 
@@ -29,11 +33,11 @@ class Tile {
     });
   }
 
-  _loadTile(buffer) {
+  private _loadTile(buffer) {
     this.tile = new VectorTile(new Protobuf(buffer));
   }
 
-  _unzipIfNeeded(buffer) {
+  private _unzipIfNeeded(buffer) {
     return new Promise((resolve, reject) => {
       if (this._isGzipped(buffer)) {
         zlib.gunzip(buffer, (err, data) => {
@@ -48,11 +52,11 @@ class Tile {
     });
   }
 
-  _isGzipped(buffer) {
+  private _isGzipped(buffer) {
     return buffer.slice(0, 2).indexOf(Buffer.from([0x1f, 0x8b])) === 0;
   }
 
-  _loadLayers() {
+  private _loadLayers() {
     const layers = {};
     const colorCache = {};
     for (const name in this.tile.layers) {
@@ -121,7 +125,7 @@ class Tile {
     return this.layers = layers;
   }
 
-  _addBoundaries(deep, data) {
+  private _addBoundaries(deep, data) {
     let minX = 2e308;
     let maxX = -2e308;
     let minY = 2e308;
@@ -140,7 +144,7 @@ class Tile {
     return data;
   }
 
-  _reduceGeometry(feature, factor) {
+  private _reduceGeometry(feature, factor) {
     const results = [];
     const geometries = feature.loadGeometry();
     for (const points of geometries) {
@@ -164,4 +168,4 @@ class Tile {
 
 Tile.prototype.layers = {};
 
-module.exports = Tile;
+export default Tile;

@@ -8,9 +8,12 @@
   Compiles layer filter instructions into a chain of true/false returning
   anonymous functions to improve rendering speed compared to realtime parsing.
 */
-'use strict';
 
 class Styler {
+  public styleById: Record<string, Record<string, unknown>>;
+  public styleByLayer: Record<string, unknown[]>;
+  private styleName: string;
+
   constructor(style) {
     this.styleById = {};
     this.styleByLayer = {};
@@ -130,4 +133,4 @@ class Styler {
   }
 }
 
-module.exports = Styler;
+export default Styler;

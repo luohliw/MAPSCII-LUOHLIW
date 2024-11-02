@@ -4,18 +4,37 @@
 
   The Console Vector Tile renderer - bäm!
 */
-'use strict';
-const x256 = require('x256');
-const simplify = require('simplify-js');
+import x256 from 'x256';
+import simplify from 'simplify-js';
 
-const Canvas = require('./Canvas');
-const LabelBuffer = require('./LabelBuffer');
-const Styler = require('./Styler');
-const utils = require('./utils');
-const config = require('./config');
+import Canvas from './Canvas';
+import LabelBuffer from './LabelBuffer';
+import Styler from './Styler';
+import utils from './utils';
+import config from './config';
+import TileSource from './TileSource';
 
 class Renderer {
-  constructor(output, tileSource, style) {
+  private canvas: Canvas | undefined;
+  private height: number;
+  private labelBuffer: LabelBuffer;
+  private output: unknown;
+  private styler: Styler;
+  private tileSource: TileSource;
+  private width: number;
+  private _seen: Record<string, boolean>;
+
+  private terminal = {
+    CLEAR: '\x1B[2J',
+    MOVE: '\x1B[?6h',
+  };
+  
+  private isDrawing = false;
+  private lastDrawAt = 0;
+  private tilePadding = 64;
+  
+
+  constructor(output, tileSource: TileSource, style) {
     this.output = output;
     this.tileSource = tileSource;
     this.labelBuffer = new LabelBuffer();
@@ -23,13 +42,13 @@ class Renderer {
     this.tileSource.useStyler(this.styler);
   }
 
-  setSize(width, height) {
+  setSize(width: number, height: number) {
     this.width = width;
     this.height = height;
     this.canvas = new Canvas(width, height);
   }
 
-  async draw(center, zoom) {
+  async draw(center, zoom: number) {
     if (this.isDrawing) return Promise.reject();
     this.isDrawing = true;
 
@@ -321,15 +340,4 @@ class Renderer {
   }
 }
 
-Renderer.prototype.terminal = {
-  CLEAR: '\x1B[2J',
-  MOVE: '\x1B[?6h',
-};
-
-Renderer.prototype.isDrawing = false;
-Renderer.prototype.lastDrawAt = 0;
-Renderer.prototype.labelBuffer = null;
-Renderer.prototype.tileSource = null;
-Renderer.prototype.tilePadding = 64;
-
-module.exports = Renderer;
+export default Renderer;

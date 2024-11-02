@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   language: 'en',
 
   // TODO: adapt to osm2vectortiles successor openmaptiles v3)
@@ -7,7 +7,7 @@ module.exports = {
 
   //source: __dirname+"/../mbtiles/regensburg.mbtiles",
 
-  styleFile: __dirname+'/../styles/dark.json',
+  styleFile: import.meta.dirname+'/../styles/dark.json',
 
   initialZoom: null,
   maxZoom: 18,

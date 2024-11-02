@@ -5,11 +5,12 @@
   Using 2D spatial indexing to avoid overlapping labels and markers
   and to find labels underneath a mouse cursor's position
 */
-'use strict';
-const RBush = require('rbush');
-const stringWidth = require('string-width');
+import RBush from 'rbush';
+import stringWidth from 'string-width';
 
-module.exports = class LabelBuffer {
+export default class LabelBuffer {
+  private tree: RBush;
+  private margin: number;
 
   constructor() {
     this.tree = new RBush();
@@ -20,11 +21,11 @@ module.exports = class LabelBuffer {
     this.tree.clear();
   }
 
-  project(x, y) {
+  project(x: number, y: number) {
     return [Math.floor(x/2), Math.floor(y/4)];
   }
 
-  writeIfPossible(text, x, y, feature, margin) {
+  writeIfPossible(text: string, x: number, y: number, feature, margin: number) {
     margin = margin || this.margin;
 
     const point = this.project(x, y);
@@ -38,15 +39,15 @@ module.exports = class LabelBuffer {
     }
   }
 
-  featuresAt(x, y) {
+  featuresAt(x: number, y: number) {
     this.tree.search({minX: x, maxX: x, minY: y, maxY: y});
   }
 
-  _hasSpace(text, x, y) {
+  _hasSpace(text: string, x: number, y: number) {
     return !this.tree.collides(this._calculateArea(text, x, y));
   }
 
-  _calculateArea(text, x, y, margin = 0) {
+  _calculateArea(text: string, x: number, y: number, margin = 0) {
     return {
       minX: x-margin,
       minY: y-margin/2,

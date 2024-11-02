@@ -1,11 +1,11 @@
-module.exports = {
+export default {
     "env": {
         "es6": true,
         "node": true,
         "jest": true
     },
     "parserOptions": {
-        "ecmaVersion": 2018
+        "ecmaVersion": 2020
     },
     "extends": [
         "eslint:recommended",

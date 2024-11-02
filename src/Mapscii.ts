@@ -4,17 +4,31 @@
 
   UI and central command center
 */
-'use strict';
-const fs = require('fs');
-const keypress = require('keypress');
-const TermMouse = require('term-mouse');
+import fs from 'fs';
+import keypress from 'keypress';
+import TermMouse from 'term-mouse';
 
-const Renderer = require('./Renderer');
-const TileSource = require('./TileSource');
-const utils = require('./utils');
-let config = require('./config');
+import type Canvas from './Canvas';
+import Renderer from './Renderer';
+import TileSource from './TileSource';
+import utils from './utils';
+import globalConfig from './config';
+
+let config = globalConfig;
 
 class Mapscii {
+  private width: number | null;
+  private height: number | null;
+  private canvas: Canvas | null;
+  private mouse: any;
+  private mouseDragging: boolean;
+  private mousePosition: any;
+  private tileSource: TileSource | null;
+  private renderer: Renderer | null;
+  private zoom: number;
+  private minZoom: number | null;
+  private center: any;
+
   constructor(options) {
     this.width = null;
     this.height = null;
@@ -310,4 +324,4 @@ class Mapscii {
   }
 }
 
-module.exports = Mapscii;
+export default Mapscii;

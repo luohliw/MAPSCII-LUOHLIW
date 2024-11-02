@@ -11,10 +11,9 @@
 
   Will either be merged into node-drawille or become an own module at some point
 */
-'use strict';
-const stringWidth = require('string-width');
-const config = require('./config');
-const utils = require('./utils');
+import stringWidth from 'string-width';
+import config from './config';
+import utils from './utils';
 
 const asciiMap = {
   // '▬': [2+32, 4+64],
@@ -30,13 +29,20 @@ const asciiMap = {
 const termReset = '\x1B[39;49m';
 
 class BrailleBuffer {
-  constructor(width, height) {
+  private brailleMap: number[][];
+  private pixelBuffer: Buffer;
+  private charBuffer: unknown[] | null;
+  private foregroundBuffer: Buffer;
+  private backgroundBuffer: Buffer;
+  private height: number;
+  private width: number;
+  private globalBackground: string | null;
+  private asciiToBraille: unknown[];
+
+  constructor(width: number, height: number) {
     this.brailleMap = [[0x1, 0x8],[0x2, 0x10],[0x4, 0x20],[0x40, 0x80]];
 
-    this.pixelBuffer = null;
     this.charBuffer = null;
-    this.foregroundBuffer = null;
-    this.backgroundBuffer = null;
 
     this.asciiToBraille = [];
 
@@ -61,7 +67,7 @@ class BrailleBuffer {
     this.backgroundBuffer.fill(0);
   }
 
-  setGlobalBackground(background) {
+  setGlobalBackground(background: string) {
     this.globalBackground = background;
   }
 
@@ -208,4 +214,4 @@ class BrailleBuffer {
   }
 }
 
-module.exports = BrailleBuffer;
+export default BrailleBuffer;
