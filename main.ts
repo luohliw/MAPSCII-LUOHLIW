@@ -7,8 +7,8 @@
 
   TODO: params parsing and so on
 #*/
-import config from './src/config';
-import Mapscii from './src/Mapscii';
+import config from './src/config.ts';
+import Mapscii from './src/Mapscii.ts';
 import yargs from 'yargs/yargs';
 import { hideBin } from 'yargs/helpers';
 

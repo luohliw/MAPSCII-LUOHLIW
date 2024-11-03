@@ -6,14 +6,14 @@
   * remote TileServer
   * local MBTiles and VectorTiles
 */
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import fetch from 'node-fetch';
 import envPaths from 'env-paths';
 const paths = envPaths('mapscii');
 
-import Tile from './Tile';
-import config from './config';
+import Tile from './Tile.ts';
+import config from './config.ts';
 
 // https://github.com/mapbox/node-mbtiles has native build dependencies (sqlite3)
 // To maximize MapSCII’s compatibility, MBTiles support must be manually added via

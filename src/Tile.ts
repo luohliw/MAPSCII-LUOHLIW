@@ -4,20 +4,32 @@
 
   Handling of and access to single VectorTiles
 */
+import { Buffer } from 'node:buffer';
+import zlib from 'node:zlib';
 import { VectorTile } from '@mapbox/vector-tile';
 import Protobuf from 'pbf';
-import zlib from 'zlib';
 import RBush from 'rbush';
 import x256 from 'x256';
 
-import config from './config';
-import utils from './utils';
-import Styler from './Styler';
+import config from './config.ts';
+import utils from './utils.ts';
+import Styler from './Styler.ts';
 
 class Tile {
   public layers: any[];
   private styler: Styler;
   private tile: VectorTile;
+
+  public position: {
+    x: number,
+    y: number,
+  };
+  public xyz: {
+    x: number,
+    y: number,
+    z: number,
+  };
+  public zoom: number;
 
   constructor(styler: Styler) {
     this.styler = styler;

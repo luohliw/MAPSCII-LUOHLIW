@@ -11,9 +11,10 @@
 
   Will either be merged into node-drawille or become an own module at some point
 */
+import { Buffer } from 'node:buffer';
 import stringWidth from 'string-width';
-import config from './config';
-import utils from './utils';
+import config from './config.ts';
+import utils from './utils.ts';
 
 const asciiMap = {
   // '▬': [2+32, 4+64],

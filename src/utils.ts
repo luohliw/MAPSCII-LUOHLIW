@@ -4,7 +4,7 @@
 
   methods used all around
 */
-import config from './config';
+import config from './config.ts';
 
 const constants = {
   RADIUS: 6378137,

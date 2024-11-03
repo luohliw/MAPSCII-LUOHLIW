@@ -7,12 +7,15 @@
 import x256 from 'x256';
 import simplify from 'simplify-js';
 
-import Canvas from './Canvas';
-import LabelBuffer from './LabelBuffer';
-import Styler from './Styler';
-import utils from './utils';
-import config from './config';
-import TileSource from './TileSource';
+import Canvas from './Canvas.ts';
+import LabelBuffer from './LabelBuffer.ts';
+import Styler from './Styler.ts';
+import utils from './utils.ts';
+import config from './config.ts';
+import TileSource from './TileSource.ts';
+import Tile from './Tile.ts';
+
+export type Feature = unknown;
 
 class Renderer {
   private canvas: Canvas | undefined;
@@ -87,7 +90,7 @@ class Renderer {
     const z = utils.baseZoom(zoom);
     center = utils.ll2tile(center.lon, center.lat, z);
     
-    const tiles = [];
+    const tiles: Tile[] = [];
     const tileSize = utils.tilesizeAtZoom(zoom);
     
     for (let y = Math.floor(center.y) - 1; y <= Math.floor(center.y) + 1; y++) {
@@ -121,12 +124,12 @@ class Renderer {
     return tiles;
   }
 
-  async _getTile(tile) {
+  async _getTile(tile: Tile): Promise<Tile> {
     tile.data = await this.tileSource.getTile(tile.xyz.z, tile.xyz.x, tile.xyz.y);
     return tile;
   }
 
-  _getTileFeatures(tile, zoom) {
+  _getTileFeatures(tile: Tile, zoom: number): Tile {
     const position = tile.position;
     const layers = {};
     const drawOrder = this._generateDrawOrder(zoom);
@@ -152,7 +155,11 @@ class Renderer {
   }
 
   _renderTiles(tiles) {
-    const labels = [];
+    const labels: {
+      tile: Tile,
+      feature: any,
+      scale: unknown,
+    }[] = [];
     if (tiles.length === 0) return;
     
     const drawOrder = this._generateDrawOrder(tiles[0].xyz.z);
@@ -167,7 +174,7 @@ class Renderer {
             labels.push({
               tile,
               feature,
-              scale: layer.scale
+              scale: layer.scale,
             });
           } else {
             this._drawFeature(tile, feature, layer.scale);
@@ -195,11 +202,11 @@ class Renderer {
     return frame;
   }
 
-  featuresAt(x, y) {
+  featuresAt(x: number, y: number): Feature[] {
     return this.labelBuffer.featuresAt(x, y);
   }
 
-  _drawFeature(tile, feature, scale) {
+  _drawFeature(tile, feature, scale: number): boolean {
     let points, placed;
     if (feature.style.minzoom && tile.zoom < feature.style.minzoom) {
       return false;
@@ -263,11 +270,11 @@ class Renderer {
     return true;
   }
 
-  _scaleAndReduce(tile, feature, points, scale, filter = true) {
+  _scaleAndReduce(tile: Tile, feature: Feature, points: {x: number, y: number}[], scale: number, filter = true) {
     let lastX;
     let lastY;
     let outside;
-    const scaled = [];
+    const scaled: {x: number, y: number}[] = [];
     
     const minX = -this.tilePadding;
     const minY = -this.tilePadding;

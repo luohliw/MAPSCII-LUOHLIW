@@ -12,7 +12,7 @@
  */
 import bresenham from 'bresenham';
 import earcut from 'earcut';
-import BrailleBuffer from './BrailleBuffer';
+import BrailleBuffer from './BrailleBuffer.ts';
 
 class Canvas {
   private buffer: BrailleBuffer;

@@ -4,15 +4,15 @@
 
   UI and central command center
 */
-import fs from 'fs';
+import fs from 'node:fs';
 import keypress from 'keypress';
 import TermMouse from 'term-mouse';
 
-import type Canvas from './Canvas';
-import Renderer from './Renderer';
-import TileSource from './TileSource';
-import utils from './utils';
-import globalConfig from './config';
+import type Canvas from './Canvas.ts';
+import Renderer from './Renderer.ts';
+import TileSource from './TileSource.ts';
+import utils from './utils.ts';
+import globalConfig from './config.ts';
 
 let config = globalConfig;
 
