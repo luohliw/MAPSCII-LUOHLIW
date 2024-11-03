@@ -143,10 +143,11 @@ class Tile {
   }
 
   private _addBoundaries(deep: boolean, data) {
-    let minX = 2e308;
-    let maxX = -2e308;
-    let minY = 2e308;
-    let maxY = -2e308;
+    // 2e307 is a high number that's not Infinity.
+    let minX = 2e307;
+    let maxX = -2e307;
+    let minY = 2e307;
+    let maxY = -2e307;
     const points = (deep ? data.points[0] : data.points);
     for (const p of points) {
       if (p.x < minX) minX = p.x;
