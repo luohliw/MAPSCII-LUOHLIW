@@ -47,7 +47,6 @@ class Renderer {
   private styler: Styler;
   private tileSource: TileSource;
   private width: number;
-  private _seen: Record<string, boolean>;
 
   private terminal = {
     CLEAR: '\x1B[2J',
@@ -78,7 +77,7 @@ class Renderer {
     this.isDrawing = true;
 
     this.labelBuffer.clear();
-    this._seen = {};
+    const seen = new Set<string>();
 
     let ref;
     const color = ((ref = this.styler.styleById['background']) !== null ?
@@ -98,7 +97,7 @@ class Renderer {
         await this._getTile(tile);
         this._getTileFeatures(tile, zoom);
       }));
-      await this._renderTiles(tiles);
+      await this._renderTiles(tiles, seen);
       return this._getFrame();
     } catch (err) {
       console.error(err);
@@ -176,7 +175,7 @@ class Renderer {
     return tile;
   }
 
-  private _renderTiles(tiles) {
+  private _renderTiles(tiles, seen: Set<string>) {
     const labels: {
       tile: Tile,
       feature: Feature,
@@ -199,7 +198,7 @@ class Renderer {
               scale: layer.scale,
             });
           } else {
-            this._drawFeature(tile, feature, layer.scale);
+            this._drawFeature(tile, feature, layer.scale, seen);
           }
         }
       }
@@ -210,7 +209,7 @@ class Renderer {
     });
 
     for (const label of labels) {
-      this._drawFeature(label.tile, label.feature, label.scale);
+      this._drawFeature(label.tile, label.feature, label.scale, seen);
     }
   }
 
@@ -231,7 +230,7 @@ class Renderer {
   //   return this.labelBuffer.featuresAt(x, y);
   // }
 
-  private _drawFeature(tile: Tile, feature, scale: number): boolean {
+  private _drawFeature(tile: Tile, feature, scale: number, seen: Set<string>): boolean {
     if (!this.canvas) {
       return false;
     }
@@ -266,7 +265,7 @@ class Renderer {
         const genericSymbol = config.poiMarker;
         const text = feature.label || config.poiMarker;
         
-        if (this._seen[text] && !genericSymbol) {
+        if (seen.has(text) && !genericSymbol) {
           return false;
         }
         
@@ -290,7 +289,7 @@ class Renderer {
           }
         }
         if (placed) {
-          this._seen[text] = true;
+          seen.add(text);
         }
         break;
       }
