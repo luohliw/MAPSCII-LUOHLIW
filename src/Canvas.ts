@@ -10,13 +10,17 @@
 
   Will most likely be turned into a stand alone module at some point
  */
-'use strict';
-const bresenham = require('bresenham');
-const earcut = require('earcut');
-const BrailleBuffer = require('./BrailleBuffer');
+import bresenham from 'bresenham';
+import earcut from 'earcut';
+import BrailleBuffer from './BrailleBuffer.ts';
 
 class Canvas {
-  constructor(width, height) {
+  private buffer: BrailleBuffer;
+  private height: number;
+  private stack: unknown[] = [];
+  private width: number;
+
+  constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
     this.buffer = new BrailleBuffer(width, height);
@@ -30,7 +34,7 @@ class Canvas {
     this.buffer.clear();
   }
 
-  text(text, x, y, color, center = false) {
+  text(text: string, x: number, y: number, color, center = false) {
     this.buffer.writeText(text, x, y, color, center);
   }
 
@@ -55,8 +59,8 @@ class Canvas {
   }
 
   polygon(rings, color) {
-    const vertices = [];
-    const holes = [];
+    const vertices: number[] = [];
+    const holes: number[] = [];
     for (const ring of rings) {
       if (vertices.length) {
         if (ring.length < 3) continue;
@@ -73,7 +77,7 @@ class Canvas {
     let triangles;
     try {
       triangles = earcut(vertices, holes);
-    } catch (error) {
+    } catch {
       return false;
     }
     for (let i = 0; i < triangles.length; i += 3) {
@@ -85,13 +89,13 @@ class Canvas {
     return true;
   }
 
-  _polygonExtract(vertices, pointId) {
+  private _polygonExtract(vertices, pointId) {
     return [vertices[pointId * 2], vertices[pointId * 2 + 1]];
   }
 
   // Inspired by Alois Zingl's "The Beauty of Bresenham's Algorithm"
   // -> http://members.chello.at/~easyfilter/bresenham.html
-  _line(x0, y0, x1, y1, width, color) {
+  private _line(x0, y0, x1, y1, width, color) {
     // Fall back to width-less bresenham algorithm if we dont have a width
     if (!(width = Math.max(0, width - 1))) {
       return bresenham(x0, y0, x1, y1, (x, y) => {
@@ -145,7 +149,7 @@ class Canvas {
     /* eslint-enable */
   }
 
-  _filledRectangle(x, y, width, height, color) {
+  private _filledRectangle(x, y, width, height, color) {
     const pointA = [x, y];
     const pointB = [x + width, y];
     const pointC = [x, y + height];
@@ -154,18 +158,18 @@ class Canvas {
     this._filledTriangle(pointC, pointB, pointD, color);
   }
 
-  _bresenham(pointA, pointB) {
+  private _bresenham(pointA, pointB) {
     return bresenham(pointA[0], pointA[1], pointB[0], pointB[1]);
   }
 
   // Draws a filled triangle
-  _filledTriangle(pointA, pointB, pointC, color) {
+  private _filledTriangle(pointA, pointB, pointC, color) {
     const a = this._bresenham(pointB, pointC);
     const b = this._bresenham(pointA, pointC);
     const c = this._bresenham(pointA, pointB);
     
     const points = a.concat(b).concat(c).filter((point) => {
-      var ref;
+      let ref;
       return (0 <= (ref = point.y) && ref < this.height);
     }).sort(function(a, b) {
       if (a.y === b.y) {
@@ -197,6 +201,4 @@ class Canvas {
   }
 }
 
-Canvas.prototype.stack = [];
-
-module.exports = Canvas;
+export default Canvas;

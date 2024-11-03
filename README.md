@@ -1,6 +1,6 @@
-# MapSCII - The Whole World In Your Console. [![Build Status](https://travis-ci.com/rastapasta/mapscii.svg?branch=master)](https://travis-ci.com/rastapasta/mapscii)
+# MapSCII - The Whole World In Your Console.
 
-A node.js based [Vector Tile](http://wiki.openstreetmap.org/wiki/Vector_tiles) to [Braille](http://www.fileformat.info/info/unicode/block/braille_patterns/utf8test.htm) and [ASCII](https://de.wikipedia.org/wiki/American_Standard_Code_for_Information_Interchange) renderer for [xterm](https://en.wikipedia.org/wiki/Xterm)-compatible terminals.
+A TypeScript-based [Vector Tile](http://wiki.openstreetmap.org/wiki/Vector_tiles) to [Braille](http://www.fileformat.info/info/unicode/block/braille_patterns/utf8test.htm) and [ASCII](https://de.wikipedia.org/wiki/American_Standard_Code_for_Information_Interchange) renderer for [xterm](https://en.wikipedia.org/wiki/Xterm)-compatible terminals.
 
 <a href="https://asciinema.org/a/117813?autoplay=1" target="_blank">![asciicast](https://cloud.githubusercontent.com/assets/1259904/25480718/497a64e2-2b4a-11e7-9cf0-ed52ee0b89c0.png)</a>
 
@@ -22,7 +22,6 @@ If you're on Windows, use the open source telnet client [PuTTY](https://www.chia
 * Work offline and discover local [VectorTile](https://github.com/mapbox/vector-tile-spec)/[MBTiles](https://github.com/mapbox/mbtiles-spec)
 * Compatible with most Linux and OSX terminals
 * Highly optimized algorithms for a smooth experience
-* 100% pure JavaScript! :sunglasses:
 
 ## How to run it locally
 
@@ -36,7 +35,7 @@ npx mapscii
 
 ### With npm
 
-If you haven't already got Node.js >= version 10, then [go get it](http://nodejs.org/).
+If you haven't already got Bun or Deno 2, then [go get it](https://deno.com/).
 
 ```
 npm install -g mapscii

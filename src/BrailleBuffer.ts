@@ -11,10 +11,10 @@
 
   Will either be merged into node-drawille or become an own module at some point
 */
-'use strict';
-const stringWidth = require('string-width');
-const config = require('./config');
-const utils = require('./utils');
+import { Buffer } from 'node:buffer';
+import stringWidth from 'string-width';
+import config from './config.ts';
+import utils from './utils.ts';
 
 const asciiMap = {
   // '▬': [2+32, 4+64],
@@ -30,13 +30,20 @@ const asciiMap = {
 const termReset = '\x1B[39;49m';
 
 class BrailleBuffer {
-  constructor(width, height) {
+  private brailleMap: number[][];
+  private pixelBuffer: Buffer;
+  private charBuffer: string[];
+  private foregroundBuffer: Buffer;
+  private backgroundBuffer: Buffer;
+  private height: number;
+  private width: number;
+  private globalBackground: number | null;
+  private asciiToBraille: string[];
+
+  constructor(width: number, height: number) {
     this.brailleMap = [[0x1, 0x8],[0x2, 0x10],[0x4, 0x20],[0x40, 0x80]];
 
-    this.pixelBuffer = null;
-    this.charBuffer = null;
-    this.foregroundBuffer = null;
-    this.backgroundBuffer = null;
+    this.charBuffer = [];
 
     this.asciiToBraille = [];
 
@@ -54,42 +61,42 @@ class BrailleBuffer {
     this.clear();
   }
 
-  clear() {
+  clear(): void {
     this.pixelBuffer.fill(0);
     this.charBuffer = [];
     this.foregroundBuffer.fill(0);
     this.backgroundBuffer.fill(0);
   }
 
-  setGlobalBackground(background) {
+  setGlobalBackground(background: number): void {
     this.globalBackground = background;
   }
 
-  setBackground(x, y, color) {
+  setBackground(x: number, y: number, color: number): void {
     if (0 <= x && x < this.width && 0 <= y && y < this.height) {
       const idx = this._project(x, y);
       this.backgroundBuffer[idx] = color;
     }
   }
 
-  setPixel(x, y, color) {
+  setPixel(x: number, y: number, color: number): void {
     this._locate(x, y, (idx, mask) => {
       this.pixelBuffer[idx] |= mask;
       this.foregroundBuffer[idx] = color;
     });
   }
 
-  unsetPixel(x, y) {
+  unsetPixel(x: number, y: number): void {
     this._locate(x, y, (idx, mask) => {
       this.pixelBuffer[idx] &= ~mask;
     });
   }
 
-  _project(x, y) {
+  private _project(x: number, y: number): number {
     return (x>>1) + (this.width>>1)*(y>>2);
   }
 
-  _locate(x, y, cb) {
+  private _locate(x: number, y: number, cb: (idx: number, mask: number) => unknown) {
     if (!((0 <= x && x < this.width) && (0 <= y && y < this.height))) {
       return;
     }
@@ -98,57 +105,64 @@ class BrailleBuffer {
     return cb(idx, mask);
   }
 
-  _mapBraille() {
+  private _mapBraille(): string[] {
     this.asciiToBraille = [' '];
 
-    const masks = [];
+    const masks: {
+      char: string,
+      covered: number,
+      mask: number,
+    }[] = [];
     for (const char in asciiMap) {
-      const bits = asciiMap[char];
+      const bits: number[] | undefined = asciiMap[char];
       if (!(bits instanceof Array)) continue;
       for (const mask of bits) {
         masks.push({
-          mask: mask,
-          char: char,
+          char,
+          covered: 0,
+          mask,
         });
       }
     }
 
     //TODO Optimize this part
-    var i, k;
-    const results = [];
+    let i: number, k: number;
+    const results: string[] = [];
     for (i = k = 1; k <= 255; i = ++k) {
       const braille = (i & 7) + ((i & 56) << 1) + ((i & 64) >> 3) + (i & 128);
-      results.push(this.asciiToBraille[i] = masks.reduce((function(best, mask) {
+      const char = masks.reduce((best, mask) => {
         const covered = utils.population(mask.mask & braille);
         if (!best || best.covered < covered) {
           return {
-            char: mask.char,
-            covered: covered,
+            ...mask,
+            covered,
           };
         } else {
           return best;
         }
-      }), void 0).char);
+      }).char;
+      this.asciiToBraille[i] = char;
+      results.push(char);
     }
     return results;
   }
 
-  _termColor(foreground, background) {
-    background |= this.globalBackground;
-    if (foreground && background) {
-      return `\x1B[38;5;${foreground};48;5;${background}m`;
+  private _termColor(foreground: number, background: number): string {
+    const actualBackground = background ?? this.globalBackground;
+    if (foreground && actualBackground) {
+      return `\x1B[38;5;${foreground};48;5;${actualBackground}m`;
     } else if (foreground) {
       return `\x1B[49;38;5;${foreground}m`;
-    } else if (background) {
-      return `\x1B[39;48;5;${background}m`;
+    } else if (actualBackground) {
+      return `\x1B[39;48;5;${actualBackground}m`;
     } else {
       return termReset;
     }
   }
 
-  frame() {
-    const output = [];
-    let currentColor = null;
+  frame(): string {
+    const output: string[] = [];
+    let currentColor: string | null = null;
     let skip = 0;
 
     for (let y = 0; y < this.height/4; y++) {
@@ -175,7 +189,7 @@ class BrailleBuffer {
         } else {
           if (!skip) {
             if (config.useBraille) {
-              output.push(String.fromCharCode(0x2800+this.pixelBuffer[idx]));
+              output.push(String.fromCharCode(0x2800 + this.pixelBuffer[idx]));
             } else {
               output.push(this.asciiToBraille[this.pixelBuffer[idx]]);
             }
@@ -186,11 +200,11 @@ class BrailleBuffer {
       }
     }
 
-    output.push(termReset+config.delimeter);
+    output.push(termReset + config.delimeter);
     return output.join('');
   }
 
-  setChar(char, x, y, color) {
+  setChar(char: string, x: number, y: number, color: number): void {
     if (0 <= x && x < this.width && 0 <= y && y < this.height) {
       const idx = this._project(x, y);
       this.charBuffer[idx] = char;
@@ -198,7 +212,7 @@ class BrailleBuffer {
     }
   }
 
-  writeText(text, x, y, color, center = true) {
+  writeText(text, x, y, color, center = true): void {
     if (center) {
       x -= text.length/2+1;
     }
@@ -208,4 +222,4 @@ class BrailleBuffer {
   }
 }
 
-module.exports = BrailleBuffer;
+export default BrailleBuffer;

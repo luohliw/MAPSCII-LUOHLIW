@@ -4,15 +4,14 @@
 
   methods used all around
 */
-'use strict';
-const config = require('./config');
+import config from './config.ts';
 
 const constants = {
   RADIUS: 6378137,
 };
 
 const utils = {
-  clamp: (num, min, max) => {
+  clamp: (num: number, min: number, max: number): number => {
     if (num <= min) {
       return min;
     } else if (num >= max) {
@@ -22,20 +21,20 @@ const utils = {
     }
   },
 
-  baseZoom: (zoom) => {
+  baseZoom: (zoom: number): number => {
     return Math.min(config.tileRange, Math.max(0, Math.floor(zoom)));
   },
 
-  tilesizeAtZoom: (zoom) => {
+  tilesizeAtZoom: (zoom: number): number => {
     return config.projectSize * Math.pow(2, zoom-utils.baseZoom(zoom));
   },
 
-  deg2rad: (angle) => {
+  deg2rad: (angle: number): number => {
     // (angle / 180) * Math.PI
     return angle * 0.017453292519943295;
   },
 
-  ll2tile: (lon, lat, zoom) => {
+  ll2tile: (lon: number, lat: number, zoom: number): {x: number, y: number, z: number} => {
     return {
       x: (lon+180)/360*Math.pow(2, zoom),
       y: (1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*Math.pow(2, zoom),
@@ -43,7 +42,7 @@ const utils = {
     };
   },
 
-  tile2ll: (x, y, zoom) => {
+  tile2ll: (x: number, y: number, zoom: number): {lat: number, lon: number} => {
     const n = Math.PI - 2*Math.PI*y/Math.pow(2, zoom);
 
     return {
@@ -52,35 +51,38 @@ const utils = {
     };
   },
 
-  metersPerPixel: (zoom, lat = 0) => {
+  metersPerPixel: (zoom: number, lat = 0): number => {
     return (Math.cos(lat * Math.PI/180) * 2 * Math.PI * constants.RADIUS) / (256 * Math.pow(2, zoom));
   },
 
-  hex2rgb: (color) => {
-    if (typeof color !== 'string') return [255, 0, 0];
+  hex2rgb: (color: unknown): [r: number, g: number, b: number] => {
+    if (typeof color !== 'string') {
+      return [255, 0, 0];
+    }
 
     if (!/^#[a-fA-F0-9]{3,6}$/.test(color)) {
       throw new Error(`${color} isn't a supported hex color`);
     }
 
-    color = color.substr(1);
-    const decimal = parseInt(color, 16);
+    const decimal = parseInt(color.substring(1), 16);
 
-    if (color.length === 3) {
+    if (color.length === 4) {
       const rgb = [decimal>>8, (decimal>>4)&15, decimal&15];
-      return rgb.map((c) => {
-        return c + (c<<4);
-      });
+      return [
+        rgb[0] + (rgb[0]<<4),
+        rgb[1] + (rgb[1]<<4),
+        rgb[2] + (rgb[2]<<4),
+      ];
     } else {
       return [(decimal>>16)&255, (decimal>>8)&255, decimal&255];
     }
   },
 
-  digits: (number, digits) => {
+  digits: (number: number, digits: number): number => {
     return Math.floor(number*Math.pow(10, digits))/Math.pow(10, digits);
   },
 
-  normalize: (ll) => {
+  normalize: (ll: {lat: number, lon: number}): {lat: number, lon: number} => {
     if (ll.lon < -180) ll.lon += 360;
     if (ll.lon > 180) ll.lon -= 360;
 
@@ -90,7 +92,7 @@ const utils = {
     return ll;
   },
 
-  population: (val) => {
+  population: (val: number): number => {
     let bits = 0;
     while (val > 0) {
       bits += val & 1;
@@ -100,4 +102,4 @@ const utils = {
   },
 };
 
-module.exports = utils;
+export default utils;

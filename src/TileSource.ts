@@ -6,32 +6,41 @@
   * remote TileServer
   * local MBTiles and VectorTiles
 */
-'use strict';
-const fs = require('fs');
-const path = require('path');
-const fetch = require('node-fetch');
-const envPaths = require('env-paths');
+import fs from 'node:fs';
+import path from 'node:path';
+import fetch from 'node-fetch';
+import envPaths from 'env-paths';
 const paths = envPaths('mapscii');
 
-const Tile = require('./Tile');
-const config = require('./config');
+import config from './config.ts';
+import Tile from './Tile.ts';
+import Styler from './Styler.ts';
 
 // https://github.com/mapbox/node-mbtiles has native build dependencies (sqlite3)
 // To maximize MapSCII’s compatibility, MBTiles support must be manually added via
 // $> npm install -g @mapbox/mbtiles
-let MBTiles = null;
-try {
-  MBTiles = require('@mapbox/mbtiles');
-} catch (err) {void 0;}
+// let MBTiles = null;
+// try {
+//   MBTiles = await import('@mapbox/mbtiles');
+// } catch {void 0;}
+import MBTiles from '@mapbox/mbtiles';
 
-const modes = {
-  MBTiles: 1,
-  VectorTile: 2,
-  HTTP: 3,
+export enum Mode {
+  MBTiles = 1,
+  VectorTile = 2,
+  HTTP = 3,
 };
 
 class TileSource {
-  init(source) {
+  private source: string;
+  private cache: Record<string, unknown>;
+  private cacheSize: number;
+  private cached: unknown[];
+  public mode: Mode | null;
+  private mbtiles: MBTiles | null;
+  private styler: Styler;
+
+  init(source: string): void {
     this.source = source;
     
     this.cache = {};
@@ -47,23 +56,23 @@ class TileSource {
         this._initPersistence();
       }
 
-      this.mode = modes.HTTP;
+      this.mode = Mode.HTTP;
 
     } else if (this.source.endsWith('.mbtiles')) {
       if (!MBTiles) {
         throw new Error('MBTiles support must be installed with following command: \'npm install -g @mapbox/mbtiles\'');
       }
 
-      this.mode = modes.MBTiles;
+      this.mode = Mode.MBTiles;
       this.loadMBTiles(source);
     } else {
       throw new Error('source type isn\'t supported yet');
     }
   }
 
-  loadMBTiles(source) {
+  loadMBTiles(source): Promise<void> {
     return new Promise((resolve, reject) => {
-      new MBTiles(source, (err, mbtiles) => {
+      new MBTiles(`${source}?mode=ro`, (err, mbtiles) => {
         if (err) {
           reject(err);
         }
@@ -77,7 +86,7 @@ class TileSource {
     this.styler = styler;
   }
 
-  getTile(z, x, y) {
+  getTile(z: number, x: number, y: number) {
     if (!this.mode) {
       throw new Error('no TileSource defined');
     }
@@ -88,21 +97,21 @@ class TileSource {
     }
     
     if (this.cached.length > this.cacheSize) {
-      const overflow = Math.abs(this.cacheSize - this.cache.length);
+      const overflow = Math.abs(this.cacheSize - this.cached.length);
       for (const tile in this.cached.splice(0, overflow)) {
         delete this.cache[tile];
       }
     }
   
     switch (this.mode) {
-      case modes.MBTiles:
+      case Mode.MBTiles:
         return this._getMBTile(z, x, y);
-      case modes.HTTP:
+      case Mode.HTTP:
         return this._getHTTP(z, x, y);
     }
   }
 
-  _getHTTP(z, x, y) {
+  private _getHTTP(z: number, x: number, y: number) {
     let promise;
     const persistedTile = this._getPersited(z, x, y);
     if (config.persistDownloadedTiles && persistedTile) {
@@ -122,7 +131,7 @@ class TileSource {
     });
   }
 
-  _getMBTile(z, x, y) {
+  private _getMBTile(z: number, x: number, y: number) {
     return new Promise((resolve, reject) => {
       this.mbtiles.getTile(z, x, y, (err, buffer) => {
         if (err) {
@@ -133,7 +142,7 @@ class TileSource {
     });
   }
 
-  _createTile(z, x, y, buffer) {
+  private _createTile(z: number, x: number, y: number, buffer) {
     const name = [z, x, y].join('-');
     this.cached.push(name);
     
@@ -141,30 +150,30 @@ class TileSource {
     return tile.load(buffer);
   }
 
-  _initPersistence() {
+  private _initPersistence() {
     try {
       this._createFolder(paths.cache);
-    } catch (error) {
+    } catch {
       config.persistDownloadedTiles = false;
     }
   }
 
-  _persistTile(z, x, y, buffer) {
+  private _persistTile(z, x, y, buffer) {
     const zoom = z.toString();
     this._createFolder(path.join(paths.cache, zoom));
     const filePath = path.join(paths.cache, zoom, `${x}-${y}.pbf`);
     return fs.writeFile(filePath, buffer, () => null);
   }
 
-  _getPersited(z, x, y) {
+  private _getPersited(z: number, x: number, y: number) {
     try {
       return fs.readFileSync(path.join(paths.cache, z.toString(), `${x}-${y}.pbf`));
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
-  _createFolder(path) {
+  private _createFolder(path: string): true {
     try {
       fs.mkdirSync(path);
       return true;
@@ -175,4 +184,4 @@ class TileSource {
   }
 }
 
-module.exports = TileSource;
+export default TileSource;

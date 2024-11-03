@@ -4,18 +4,61 @@
 
   The Console Vector Tile renderer - bäm!
 */
-'use strict';
-const x256 = require('x256');
-const simplify = require('simplify-js');
+import RBush from 'rbush';
+import simplify from 'simplify-js';
+import x256 from 'x256';
 
-const Canvas = require('./Canvas');
-const LabelBuffer = require('./LabelBuffer');
-const Styler = require('./Styler');
-const utils = require('./utils');
-const config = require('./config');
+import Canvas from './Canvas.ts';
+import LabelBuffer from './LabelBuffer.ts';
+import Styler from './Styler.ts';
+import utils from './utils.ts';
+import config from './config.ts';
+import TileSource from './TileSource.ts';
+import Tile from './Tile.ts';
+
+export type Layer = {
+  extent?: unknown,
+  tree?: RBush<{
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number,
+    feature: Feature,
+  }>,
+  scale?: number,
+  features?: Feature[],
+};
+export type Layers = Record<string, Layer>;
+export type Feature = {
+  properties: Record<string, unknown>,
+  // TODO `style` is likely incomplete and incorrect
+  style: {
+    type?: string,
+  },
+  sort: number,
+  sorty: number,
+};
 
 class Renderer {
-  constructor(output, tileSource, style) {
+  private canvas: Canvas | undefined;
+  private height: number;
+  private labelBuffer: LabelBuffer;
+  private output: unknown;
+  private styler: Styler;
+  private tileSource: TileSource;
+  private width: number;
+
+  private terminal = {
+    CLEAR: '\x1B[2J',
+    MOVE: '\x1B[?6h',
+  };
+  
+  private isDrawing = false;
+  private lastDrawAt = 0;
+  private tilePadding = 64;
+  
+
+  constructor(output, tileSource: TileSource, style) {
     this.output = output;
     this.tileSource = tileSource;
     this.labelBuffer = new LabelBuffer();
@@ -23,18 +66,18 @@ class Renderer {
     this.tileSource.useStyler(this.styler);
   }
 
-  setSize(width, height) {
+  setSize(width: number, height: number) {
     this.width = width;
     this.height = height;
     this.canvas = new Canvas(width, height);
   }
 
-  async draw(center, zoom) {
+  async draw(center, zoom: number): Promise<string> {
     if (this.isDrawing) return Promise.reject();
     this.isDrawing = true;
 
     this.labelBuffer.clear();
-    this._seen = {};
+    const seen = new Set<string>();
 
     let ref;
     const color = ((ref = this.styler.styleById['background']) !== null ?
@@ -43,32 +86,32 @@ class Renderer {
       void 0
     );
     if (color) {
-      this.canvas.setBackground(x256(utils.hex2rgb(color)));
+      this.canvas?.setBackground(x256(utils.hex2rgb(color)));
     }
 
-    this.canvas.clear();
+    this.canvas?.clear();
 
     try {
-      let tiles = this._visibleTiles(center, zoom);
+      const tiles = this._visibleTiles(center, zoom);
       await Promise.all(tiles.map(async(tile) => {
         await this._getTile(tile);
         this._getTileFeatures(tile, zoom);
       }));
-      await this._renderTiles(tiles);
+      await this._renderTiles(tiles, seen);
       return this._getFrame();
-    } catch(e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
     } finally {
       this.isDrawing = false;
       this.lastDrawAt = Date.now();
     }
   }
 
-  _visibleTiles(center, zoom) {
+  private _visibleTiles(center, zoom) {
     const z = utils.baseZoom(zoom);
     center = utils.ll2tile(center.lon, center.lat, z);
     
-    const tiles = [];
+    const tiles: Tile[] = [];
     const tileSize = utils.tilesizeAtZoom(zoom);
     
     for (let y = Math.floor(center.y) - 1; y <= Math.floor(center.y) + 1; y++) {
@@ -102,14 +145,14 @@ class Renderer {
     return tiles;
   }
 
-  async _getTile(tile) {
+  async _getTile(tile: Tile): Promise<Tile> {
     tile.data = await this.tileSource.getTile(tile.xyz.z, tile.xyz.x, tile.xyz.y);
     return tile;
   }
 
-  _getTileFeatures(tile, zoom) {
+  private _getTileFeatures(tile: Tile, zoom: number): Tile {
     const position = tile.position;
-    const layers = {};
+    const layers: Layers = {};
     const drawOrder = this._generateDrawOrder(zoom);
     for (const layerId of drawOrder) {
       const layer = (tile.data.layers || {})[layerId];
@@ -119,12 +162,12 @@ class Renderer {
       
       const scale = layer.extent / utils.tilesizeAtZoom(zoom);
       layers[layerId] = {
-        scale: scale,
+        scale,
         features: layer.tree.search({
           minX: -position.x * scale,
           minY: -position.y * scale,
           maxX: (this.width - position.x) * scale,
-          maxY: (this.height - position.y) * scale
+          maxY: (this.height - position.y) * scale,
         }),
       };
     }
@@ -132,8 +175,12 @@ class Renderer {
     return tile;
   }
 
-  _renderTiles(tiles) {
-    const labels = [];
+  private _renderTiles(tiles, seen: Set<string>) {
+    const labels: {
+      tile: Tile,
+      feature: Feature,
+      scale: number,
+    }[] = [];
     if (tiles.length === 0) return;
     
     const drawOrder = this._generateDrawOrder(tiles[0].xyz.z);
@@ -148,10 +195,10 @@ class Renderer {
             labels.push({
               tile,
               feature,
-              scale: layer.scale
+              scale: layer.scale,
             });
           } else {
-            this._drawFeature(tile, feature, layer.scale);
+            this._drawFeature(tile, feature, layer.scale, seen);
           }
         }
       }
@@ -162,11 +209,14 @@ class Renderer {
     });
 
     for (const label of labels) {
-      this._drawFeature(label.tile, label.feature, label.scale);
+      this._drawFeature(label.tile, label.feature, label.scale, seen);
     }
   }
 
-  _getFrame() {
+  private _getFrame(): string {
+    if (!this.canvas) {
+      return '';
+    }
     let frame = '';
     if (!this.lastDrawAt) {
       frame += this.terminal.CLEAR;
@@ -176,11 +226,14 @@ class Renderer {
     return frame;
   }
 
-  featuresAt(x, y) {
-    return this.labelBuffer.featuresAt(x, y);
-  }
+  // featuresAt(x: number, y: number) {
+  //   return this.labelBuffer.featuresAt(x, y);
+  // }
 
-  _drawFeature(tile, feature, scale) {
+  private _drawFeature(tile: Tile, feature, scale: number, seen: Set<string>): boolean {
+    if (!this.canvas) {
+      return false;
+    }
     let points, placed;
     if (feature.style.minzoom && tile.zoom < feature.style.minzoom) {
       return false;
@@ -212,7 +265,7 @@ class Renderer {
         const genericSymbol = config.poiMarker;
         const text = feature.label || config.poiMarker;
         
-        if (this._seen[text] && !genericSymbol) {
+        if (seen.has(text) && !genericSymbol) {
           return false;
         }
         
@@ -236,7 +289,7 @@ class Renderer {
           }
         }
         if (placed) {
-          this._seen[text] = true;
+          seen.add(text);
         }
         break;
       }
@@ -244,11 +297,11 @@ class Renderer {
     return true;
   }
 
-  _scaleAndReduce(tile, feature, points, scale, filter = true) {
+  private _scaleAndReduce(tile: Tile, feature: Feature, points: {x: number, y: number}[], scale: number, filter = true) {
     let lastX;
     let lastY;
     let outside;
-    const scaled = [];
+    const scaled: {x: number, y: number}[] = [];
     
     const minX = -this.tilePadding;
     const minY = -this.tilePadding;
@@ -292,7 +345,7 @@ class Renderer {
     }
   }
 
-  _generateDrawOrder(zoom) {
+  private _generateDrawOrder(zoom) {
     if (zoom < 2) {
       return [
         'admin',
@@ -321,15 +374,4 @@ class Renderer {
   }
 }
 
-Renderer.prototype.terminal = {
-  CLEAR: '\x1B[2J',
-  MOVE: '\x1B[?6h',
-};
-
-Renderer.prototype.isDrawing = false;
-Renderer.prototype.lastDrawAt = 0;
-Renderer.prototype.labelBuffer = null;
-Renderer.prototype.tileSource = null;
-Renderer.prototype.tilePadding = 64;
-
-module.exports = Renderer;
+export default Renderer;

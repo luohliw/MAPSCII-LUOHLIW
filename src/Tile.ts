@@ -4,22 +4,43 @@
 
   Handling of and access to single VectorTiles
 */
-'use strict';
-const VectorTile = require('@mapbox/vector-tile').VectorTile;
-const Protobuf = require('pbf');
-const zlib = require('zlib');
-const RBush = require('rbush');
-const x256 = require('x256');
+import { Buffer } from 'node:buffer';
+import zlib from 'node:zlib';
+import { VectorTile } from '@mapbox/vector-tile';
+import Protobuf from 'pbf';
+import RBush from 'rbush';
+import x256 from 'x256';
 
-const config = require('./config');
-const utils = require('./utils');
+import config from './config.ts';
+import utils from './utils.ts';
+import Styler from './Styler.ts';
+import { Layers } from './Renderer.ts';
 
 class Tile {
-  constructor(styler) {
+  public layers: Layers = {};
+  private styler: Styler;
+  private tile: VectorTile;
+
+  public size: number;
+  public position: {
+    x: number,
+    y: number,
+  };
+  public xyz: {
+    x: number,
+    y: number,
+    z: number,
+  };
+  public zoom: number;
+  public data: {
+    layers: unknown;
+  };
+
+  constructor(styler: Styler) {
     this.styler = styler;
   }
 
-  load(buffer) {
+  load(buffer: Buffer) {
     return this._unzipIfNeeded(buffer).then((buffer) => {
       return this._loadTile(buffer);
     }).then(() => {
@@ -29,11 +50,11 @@ class Tile {
     });
   }
 
-  _loadTile(buffer) {
+  private _loadTile(buffer: Buffer) {
     this.tile = new VectorTile(new Protobuf(buffer));
   }
 
-  _unzipIfNeeded(buffer) {
+  private _unzipIfNeeded(buffer: Buffer): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       if (this._isGzipped(buffer)) {
         zlib.gunzip(buffer, (err, data) => {
@@ -48,16 +69,16 @@ class Tile {
     });
   }
 
-  _isGzipped(buffer) {
+  private _isGzipped(buffer): boolean {
     return buffer.slice(0, 2).indexOf(Buffer.from([0x1f, 0x8b])) === 0;
   }
 
-  _loadLayers() {
-    const layers = {};
-    const colorCache = {};
+  private _loadLayers(): Layers {
+    const layers: Layers = {};
+    const colorCache: Record<string, string> = {};
     for (const name in this.tile.layers) {
       const layer = this.tile.layers[name];
-      const nodes = [];
+      const nodes: unknown[] = [];
       //continue if name is 'water'
       for (let i = 0; i < layer.length; i++) {
         // TODO: caching of similar attributes to avoid looking up the style each time
@@ -121,11 +142,12 @@ class Tile {
     return this.layers = layers;
   }
 
-  _addBoundaries(deep, data) {
-    let minX = 2e308;
-    let maxX = -2e308;
-    let minY = 2e308;
-    let maxY = -2e308;
+  private _addBoundaries(deep: boolean, data) {
+    // 2e307 is a high number that's not Infinity.
+    let minX = 2e307;
+    let maxX = -2e307;
+    let minY = 2e307;
+    let maxY = -2e307;
     const points = (deep ? data.points[0] : data.points);
     for (const p of points) {
       if (p.x < minX) minX = p.x;
@@ -140,28 +162,26 @@ class Tile {
     return data;
   }
 
-  _reduceGeometry(feature, factor) {
-    const results = [];
-    const geometries = feature.loadGeometry();
-    for (const points of geometries) {
-      const reduced = [];
-      let last;
-      for (const point of points) {
-        const p = {
-          x: Math.floor(point.x / factor),
-          y: Math.floor(point.y / factor)
-        };
-        if (last && last.x === p.x && last.y === p.y) {
-          continue;
-        }
-        reduced.push(last = p);
-      }
-      results.push(reduced);
-    }
-    return results;
-  }
+  // private _reduceGeometry(feature: Feature, factor: number): {x: number, y: number}[][] {
+  //   const results: {x: number, y: number}[][] = [];
+  //   const geometries = feature.loadGeometry();
+  //   for (const points of geometries) {
+  //     const reduced: {x: number, y: number}[] = [];
+  //     let last;
+  //     for (const point of points) {
+  //       const p = {
+  //         x: Math.floor(point.x / factor),
+  //         y: Math.floor(point.y / factor)
+  //       };
+  //       if (last && last.x === p.x && last.y === p.y) {
+  //         continue;
+  //       }
+  //       reduced.push(last = p);
+  //     }
+  //     results.push(reduced);
+  //   }
+  //   return results;
+  // }
 }
 
-Tile.prototype.layers = {};
-
-module.exports = Tile;
+export default Tile;

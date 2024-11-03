@@ -8,13 +8,19 @@
   Compiles layer filter instructions into a chain of true/false returning
   anonymous functions to improve rendering speed compared to realtime parsing.
 */
-'use strict';
+import type RBush from 'rbush';
+
+import { Feature } from "./Renderer.ts";
 
 class Styler {
+  public styleById: Record<string, Record<string, unknown>>;
+  public styleByLayer: Record<string, unknown[]>;
+  private styleName: string;
+
   constructor(style) {
     this.styleById = {};
     this.styleByLayer = {};
-    var base, name;
+    let base, name;
     this.styleName = style.name;
     if (style.constants) {
       this._replaceConstants(style.constants, style.layers);
@@ -40,7 +46,7 @@ class Styler {
     }
   }
 
-  getStyleFor(layer, feature) {
+  getStyleFor(layer: string, feature: Feature): unknown | false {
     if (!this.styleByLayer[layer]) {
       return false;
     }
@@ -54,7 +60,7 @@ class Styler {
     return false;
   }
 
-  _replaceConstants(constants, tree) {
+  private _replaceConstants(constants, tree: RBush): void {
     for (const id in tree) {
       const node = tree[id];
       switch (typeof node) {
@@ -73,7 +79,7 @@ class Styler {
   }
 
   //TODO Better translation of the long cases.
-  _compileFilter(filter) {
+  private _compileFilter(filter): (feature: Feature) => boolean {
     let filters;
     switch (filter != null ? filter[0] : void 0) {
       case 'all':
@@ -130,4 +136,4 @@ class Styler {
   }
 }
 
-module.exports = Styler;
+export default Styler;
