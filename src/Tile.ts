@@ -14,12 +14,14 @@ import x256 from 'x256';
 import config from './config.ts';
 import utils from './utils.ts';
 import Styler from './Styler.ts';
+import { Feature, Layers } from './Renderer.ts';
 
 class Tile {
-  public layers: any[];
+  public layers: Layers;
   private styler: Styler;
   private tile: VectorTile;
 
+  public size: number;
   public position: {
     x: number,
     y: number,
@@ -35,7 +37,7 @@ class Tile {
     this.styler = styler;
   }
 
-  load(buffer) {
+  load(buffer: Buffer) {
     return this._unzipIfNeeded(buffer).then((buffer) => {
       return this._loadTile(buffer);
     }).then(() => {
@@ -45,11 +47,11 @@ class Tile {
     });
   }
 
-  private _loadTile(buffer) {
+  private _loadTile(buffer: Buffer) {
     this.tile = new VectorTile(new Protobuf(buffer));
   }
 
-  private _unzipIfNeeded(buffer) {
+  private _unzipIfNeeded(buffer: Buffer): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       if (this._isGzipped(buffer)) {
         zlib.gunzip(buffer, (err, data) => {
@@ -64,13 +66,13 @@ class Tile {
     });
   }
 
-  private _isGzipped(buffer) {
+  private _isGzipped(buffer): boolean {
     return buffer.slice(0, 2).indexOf(Buffer.from([0x1f, 0x8b])) === 0;
   }
 
-  private _loadLayers() {
-    const layers = {};
-    const colorCache = {};
+  private _loadLayers(): Layers {
+    const layers: Layers = {};
+    const colorCache: Record<string, string> = {};
     for (const name in this.tile.layers) {
       const layer = this.tile.layers[name];
       const nodes = [];
@@ -137,7 +139,7 @@ class Tile {
     return this.layers = layers;
   }
 
-  private _addBoundaries(deep, data) {
+  private _addBoundaries(deep: boolean, data) {
     let minX = 2e308;
     let maxX = -2e308;
     let minY = 2e308;
@@ -156,11 +158,11 @@ class Tile {
     return data;
   }
 
-  private _reduceGeometry(feature, factor) {
-    const results = [];
+  private _reduceGeometry(feature: Feature, factor: number): {x: number, y: number}[][] {
+    const results: {x: number, y: number}[][] = [];
     const geometries = feature.loadGeometry();
     for (const points of geometries) {
-      const reduced = [];
+      const reduced: {x: number, y: number}[] = [];
       let last;
       for (const point of points) {
         const p = {

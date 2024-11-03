@@ -4,8 +4,9 @@
 
   The Console Vector Tile renderer - bäm!
 */
-import x256 from 'x256';
+import RBush from 'rbush';
 import simplify from 'simplify-js';
+import x256 from 'x256';
 
 import Canvas from './Canvas.ts';
 import LabelBuffer from './LabelBuffer.ts';
@@ -15,7 +16,14 @@ import config from './config.ts';
 import TileSource from './TileSource.ts';
 import Tile from './Tile.ts';
 
-export type Feature = unknown;
+export type Layer = {
+  extent: unknown,
+  tree: RBush,
+};
+export type Layers = Record<string, Layer>;
+export type Feature = {
+  properties: Record<string, unknown>,
+};
 
 class Renderer {
   private canvas: Canvas | undefined;
@@ -51,7 +59,7 @@ class Renderer {
     this.canvas = new Canvas(width, height);
   }
 
-  async draw(center, zoom: number) {
+  async draw(center, zoom: number): Promise<string> {
     if (this.isDrawing) return Promise.reject();
     this.isDrawing = true;
 
@@ -65,10 +73,10 @@ class Renderer {
       void 0
     );
     if (color) {
-      this.canvas.setBackground(x256(utils.hex2rgb(color)));
+      this.canvas?.setBackground(x256(utils.hex2rgb(color)));
     }
 
-    this.canvas.clear();
+    this.canvas?.clear();
 
     try {
       let tiles = this._visibleTiles(center, zoom);

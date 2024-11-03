@@ -270,7 +270,7 @@ class Mapscii {
   }
 
   _draw() {
-    this.renderer.draw(this.center, this.zoom).then((frame) => {
+    this.renderer?.draw(this.center, this.zoom).then((frame) => {
       this._write(frame);
       this.notify(this._getFooter());
     }).catch(() => {
