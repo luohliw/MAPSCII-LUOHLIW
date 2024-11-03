@@ -5,6 +5,8 @@
   UI and central command center
 */
 import fs from 'node:fs';
+import process from "node:process";
+
 import keypress from 'keypress';
 import TermMouse from 'term-mouse';
 
@@ -20,14 +22,24 @@ class Mapscii {
   private width: number | null;
   private height: number | null;
   private canvas: Canvas | null;
-  private mouse: any;
-  private mouseDragging: boolean;
-  private mousePosition: any;
+  private mouse: TermMouse | null;
+  private mouseDragging: {
+    x: number,
+    y: number,
+    center: {
+      x: number,
+      y: number,
+    },
+  } | false;
+  private mousePosition: {lat: number, lon: number} | null;
   private tileSource: TileSource | null;
   private renderer: Renderer | null;
   private zoom: number;
   private minZoom: number | null;
-  private center: any;
+  private center: {
+    lat: number,
+    lon: number,
+  };
 
   constructor(options) {
     this.width = null;
@@ -36,10 +48,7 @@ class Mapscii {
     this.mouse = null;
 
     this.mouseDragging = false;
-    this.mousePosition = {
-      x: 0,
-      y: 0,
-    };
+    this.mousePosition = null;
 
     this.tileSource = null;
     this.renderer = null;
@@ -78,7 +87,7 @@ class Mapscii {
     }
     config.input.resume();
 
-    config.input.on('keypress', (ch, key) => this._onKey(key));
+    config.input.on('keypress', (_ch, key) => this._onKey(key));
   }
 
   _initMouse() {
@@ -115,34 +124,34 @@ class Mapscii {
     this.renderer.setSize(this.width, this.height);
   }
 
-  _colrow2ll(x, y) {
+  _colrow2ll(x: number, y: number): {lat: number, lon: number} {
     const projected = {
       x: (x-0.5)*2,
       y: (y-0.5)*4,
     };
 
     const size = utils.tilesizeAtZoom(this.zoom);
-    const [dx, dy] = [projected.x-this.width/2, projected.y-this.height/2];
+    const [dx, dy] = [projected.x - this.width / 2, projected.y - this.height / 2];
 
     const z = utils.baseZoom(this.zoom);
     const center = utils.ll2tile(this.center.lon, this.center.lat, z);
 
-    return utils.normalize(utils.tile2ll(center.x+(dx/size), center.y+(dy/size), z));
+    return utils.normalize(utils.tile2ll(center.x + (dx / size), center.y + (dy / size), z));
   }
 
-  _updateMousePosition(event) {
+  _updateMousePosition(event: {x: number, y: number}): void {
     this.mousePosition = this._colrow2ll(event.x, event.y);
   }
 
   _onClick(event) {
-    if (event.x < 0 || event.x > this.width/2 || event.y < 0 || event.y > this.height/4) {
+    if (event.x < 0 || event.x > this.width / 2 || event.y < 0 || event.y > this.height / 4) {
       return;
     }
     this._updateMousePosition(event);
 
     if (this.mouseDragging && event.button === 'left') {
       this.mouseDragging = false;
-    } else {
+    } else if (this.mousePosition !== null) {
       this.setCenter(this.mousePosition.lat, this.mousePosition.lon);
     }
 
@@ -181,8 +190,8 @@ class Mapscii {
     this._draw();
   }
 
-  _onMouseMove(event) {
-    if (event.x < 0 || event.x > this.width/2 || event.y < 0 || event.y > this.height/4) {
+  _onMouseMove(event: {button: string, x: number, y: number}) {
+    if (event.x < 0 || event.x > this.width / 2 || event.y < 0 || event.y > this.height / 4) {
       return;
     }
     if (config.mouseCallback && !config.mouseCallback(event)) {
@@ -192,14 +201,14 @@ class Mapscii {
     // start dragging
     if (event.button === 'left') {
       if (this.mouseDragging) {
-        const dx = (this.mouseDragging.x-event.x)*2;
-        const dy = (this.mouseDragging.y-event.y)*4;
+        const dx = (this.mouseDragging.x - event.x) * 2;
+        const dy = (this.mouseDragging.y - event.y) * 4;
 
         const size = utils.tilesizeAtZoom(this.zoom);
 
         const newCenter = utils.tile2ll(
-          this.mouseDragging.center.x+(dx/size),
-          this.mouseDragging.center.y+(dy/size),
+          this.mouseDragging.center.x + (dx / size),
+          this.mouseDragging.center.y + (dy / size),
           utils.baseZoom(this.zoom)
         );
 
@@ -284,7 +293,7 @@ class Mapscii {
 
     let footer = `center: ${utils.digits(this.center.lat, 3)}, ${utils.digits(this.center.lon, 3)} `;
     footer += `  zoom: ${utils.digits(this.zoom, 2)} `;
-    if (this.mousePosition.lat !== undefined) {
+    if (this.mousePosition !== null) {
       footer += `  mouse: ${utils.digits(this.mousePosition.lat, 3)}, ${utils.digits(this.mousePosition.lon, 3)} `;
     }
     return footer;
@@ -297,26 +306,25 @@ class Mapscii {
     }
   }
 
-  _write(output) {
+  _write(output): void {
     config.output.write(output);
   }
 
-  zoomBy(step) {
-    if (this.zoom+step < this.minZoom) {
-      return this.zoom = this.minZoom;
+  zoomBy(step: number): void {
+    if (this.zoom + step < this.minZoom) {
+      this.zoom = this.minZoom;
+    } else if (this.zoom + step > config.maxZoom) {
+      this.zoom = config.maxZoom;
+    } else {
+      this.zoom += step;
     }
-    if (this.zoom+step > config.maxZoom) {
-      return this.zoom = config.maxZoom;
-    }
-
-    this.zoom += step;
   }
 
-  moveBy(lat, lon) {
-    this.setCenter(this.center.lat+lat, this.center.lon+lon);
+  moveBy(lat: number, lon: number): void {
+    this.setCenter(this.center.lat + lat, this.center.lon + lon);
   }
 
-  setCenter(lat, lon) {
+  setCenter(lat: number, lon: number): void {
     this.center = utils.normalize({
       lon: lon,
       lat: lat,

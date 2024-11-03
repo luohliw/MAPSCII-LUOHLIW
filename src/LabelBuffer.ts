@@ -7,7 +7,6 @@
 */
 import RBush from 'rbush';
 import stringWidth from 'string-width';
-import { Feature } from './Renderer.ts';
 
 export default class LabelBuffer {
   private tree: RBush;
@@ -32,15 +31,16 @@ export default class LabelBuffer {
     const point = this.project(x, y);
 
     if (this._hasSpace(text, point[0], point[1])) {
-      const data = this._calculateArea(text, point[0], point[1], margin);
-      data.feature = feature;
-      return this.tree.insert(data);
+      return this.tree.insert({
+        ...this._calculateArea(text, point[0], point[1], margin),
+        feature,
+      });
     } else {
       return false;
     }
   }
 
-  featuresAt(x: number, y: number): Feature[] {
+  featuresAt(x: number, y: number): void {
     this.tree.search({minX: x, maxX: x, minY: y, maxY: y});
   }
 

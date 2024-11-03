@@ -12,16 +12,18 @@ import fetch from 'node-fetch';
 import envPaths from 'env-paths';
 const paths = envPaths('mapscii');
 
-import Tile from './Tile.ts';
 import config from './config.ts';
+import Tile from './Tile.ts';
+import Styler from './Styler.ts';
 
 // https://github.com/mapbox/node-mbtiles has native build dependencies (sqlite3)
 // To maximize MapSCII’s compatibility, MBTiles support must be manually added via
 // $> npm install -g @mapbox/mbtiles
-let MBTiles = null;
-try {
-  MBTiles = await import('@mapbox/mbtiles');
-} catch (err) {void 0;}
+// let MBTiles = null;
+// try {
+//   MBTiles = await import('@mapbox/mbtiles');
+// } catch {void 0;}
+import MBTiles from '@mapbox/mbtiles';
 
 export enum Mode {
   MBTiles = 1,
@@ -31,14 +33,14 @@ export enum Mode {
 
 class TileSource {
   private source: string;
-  private cache: any;
+  private cache: Record<string, unknown>;
   private cacheSize: number;
-  private cached: any;
-  private mode: Mode | null;
-  private mbtiles: any;
-  private styler: any;
+  private cached: unknown[];
+  public mode: Mode | null;
+  private mbtiles: MBTiles | null;
+  private styler: Styler;
 
-  init(source: string) {
+  init(source: string): void {
     this.source = source;
     
     this.cache = {};
@@ -68,9 +70,9 @@ class TileSource {
     }
   }
 
-  loadMBTiles(source) {
+  loadMBTiles(source): Promise<void> {
     return new Promise((resolve, reject) => {
-      new MBTiles(source, (err, mbtiles) => {
+      new MBTiles(`${source}?mode=ro`, (err, mbtiles) => {
         if (err) {
           reject(err);
         }
@@ -95,7 +97,7 @@ class TileSource {
     }
     
     if (this.cached.length > this.cacheSize) {
-      const overflow = Math.abs(this.cacheSize - this.cache.length);
+      const overflow = Math.abs(this.cacheSize - this.cached.length);
       for (const tile in this.cached.splice(0, overflow)) {
         delete this.cache[tile];
       }
@@ -151,7 +153,7 @@ class TileSource {
   private _initPersistence() {
     try {
       this._createFolder(paths.cache);
-    } catch (error) {
+    } catch {
       config.persistDownloadedTiles = false;
     }
   }
@@ -166,7 +168,7 @@ class TileSource {
   private _getPersited(z: number, x: number, y: number) {
     try {
       return fs.readFileSync(path.join(paths.cache, z.toString(), `${x}-${y}.pbf`));
-    } catch (error) {
+    } catch {
       return false;
     }
   }

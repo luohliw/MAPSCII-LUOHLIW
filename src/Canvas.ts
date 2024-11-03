@@ -77,7 +77,7 @@ class Canvas {
     let triangles;
     try {
       triangles = earcut(vertices, holes);
-    } catch (error) {
+    } catch {
       return false;
     }
     for (let i = 0; i < triangles.length; i += 3) {
@@ -169,7 +169,7 @@ class Canvas {
     const c = this._bresenham(pointA, pointB);
     
     const points = a.concat(b).concat(c).filter((point) => {
-      var ref;
+      let ref;
       return (0 <= (ref = point.y) && ref < this.height);
     }).sort(function(a, b) {
       if (a.y === b.y) {

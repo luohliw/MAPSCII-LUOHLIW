@@ -32,6 +32,7 @@ class Tile {
     z: number,
   };
   public zoom: number;
+  public data: unknown;
 
   constructor(styler: Styler) {
     this.styler = styler;

@@ -7,6 +7,8 @@
 
   TODO: params parsing and so on
 #*/
+import process from "node:process";
+
 import config from './src/config.ts';
 import Mapscii from './src/Mapscii.ts';
 import yargs from 'yargs/yargs';

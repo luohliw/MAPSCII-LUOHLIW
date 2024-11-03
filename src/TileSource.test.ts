@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'jest';
-import TileSource from './TileSource.ts';
+import TileSource, { Mode } from './TileSource.ts';
 
 describe('TileSource', () => {
   describe('with a HTTP source', () => {

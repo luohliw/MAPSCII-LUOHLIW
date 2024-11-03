@@ -8,6 +8,7 @@
   Compiles layer filter instructions into a chain of true/false returning
   anonymous functions to improve rendering speed compared to realtime parsing.
 */
+import type RBush from 'rbush';
 
 import { Feature } from "./Renderer.ts";
 
@@ -19,7 +20,7 @@ class Styler {
   constructor(style) {
     this.styleById = {};
     this.styleByLayer = {};
-    var base, name;
+    let base, name;
     this.styleName = style.name;
     if (style.constants) {
       this._replaceConstants(style.constants, style.layers);
@@ -45,7 +46,7 @@ class Styler {
     }
   }
 
-  getStyleFor(layer, feature): unknown | false {
+  getStyleFor(layer: string, feature: Feature): unknown | false {
     if (!this.styleByLayer[layer]) {
       return false;
     }

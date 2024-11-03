@@ -79,7 +79,7 @@ class Renderer {
     this.canvas?.clear();
 
     try {
-      let tiles = this._visibleTiles(center, zoom);
+      const tiles = this._visibleTiles(center, zoom);
       await Promise.all(tiles.map(async(tile) => {
         await this._getTile(tile);
         this._getTileFeatures(tile, zoom);
@@ -165,7 +165,7 @@ class Renderer {
   _renderTiles(tiles) {
     const labels: {
       tile: Tile,
-      feature: any,
+      feature: Feature,
       scale: unknown,
     }[] = [];
     if (tiles.length === 0) return;
