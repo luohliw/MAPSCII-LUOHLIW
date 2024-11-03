@@ -75,12 +75,12 @@ class Mapscii {
   }
 
 
-  _initTileSource() {
+  private _initTileSource() {
     this.tileSource = new TileSource();
     this.tileSource.init(config.source);
   }
 
-  _initKeyboard() {
+  private _initKeyboard() {
     keypress(config.input);
     if (config.input.setRawMode) {
       config.input.setRawMode(true);
@@ -90,7 +90,7 @@ class Mapscii {
     config.input.on('keypress', (_ch, key) => this._onKey(key));
   }
 
-  _initMouse() {
+  private _initMouse() {
     this.mouse = TermMouse({
       input: config.input,
       output: config.output,
@@ -102,7 +102,7 @@ class Mapscii {
     this.mouse.on('move', (event) => this._onMouseMove(event));
   }
 
-  _initRenderer() {
+  private _initRenderer() {
     const style = JSON.parse(fs.readFileSync(config.styleFile, 'utf8'));
     this.renderer = new Renderer(config.output, this.tileSource, style);
 
@@ -115,7 +115,7 @@ class Mapscii {
     this.zoom = (config.initialZoom !== null) ? config.initialZoom : this.minZoom;
   }
 
-  _resizeRenderer() {
+  private _resizeRenderer() {
     this.width = config.size && config.size.width ? config.size.width * 2 : config.output.columns >> 1 << 2;
     this.height = config.size && config.size.height ? config.size.height * 4 : config.output.rows * 4 - 4;
 
@@ -124,7 +124,7 @@ class Mapscii {
     this.renderer.setSize(this.width, this.height);
   }
 
-  _colrow2ll(x: number, y: number): {lat: number, lon: number} {
+  private _colrow2ll(x: number, y: number): {lat: number, lon: number} {
     const projected = {
       x: (x-0.5)*2,
       y: (y-0.5)*4,
@@ -139,11 +139,11 @@ class Mapscii {
     return utils.normalize(utils.tile2ll(center.x + (dx / size), center.y + (dy / size), z));
   }
 
-  _updateMousePosition(event: {x: number, y: number}): void {
+  private _updateMousePosition(event: {x: number, y: number}): void {
     this.mousePosition = this._colrow2ll(event.x, event.y);
   }
 
-  _onClick(event) {
+  private _onClick(event) {
     if (event.x < 0 || event.x > this.width / 2 || event.y < 0 || event.y > this.height / 4) {
       return;
     }
@@ -158,7 +158,7 @@ class Mapscii {
     this._draw();
   }
 
-  _onMouseScroll(event) {
+  private _onMouseScroll(event) {
     this._updateMousePosition(event);
 
     // the location of the pointer, where we want to zoom toward
@@ -190,7 +190,7 @@ class Mapscii {
     this._draw();
   }
 
-  _onMouseMove(event: {button: string, x: number, y: number}) {
+  private _onMouseMove(event: {button: string, x: number, y: number}) {
     if (event.x < 0 || event.x > this.width / 2 || event.y < 0 || event.y > this.height / 4) {
       return;
     }
@@ -229,7 +229,7 @@ class Mapscii {
     this.notify(this._getFooter());
   }
 
-  _onKey(key) {
+  private _onKey(key) {
     if (config.keyCallback && !config.keyCallback(key)) return;
     if (!key || !key.name) return;
 
@@ -278,7 +278,7 @@ class Mapscii {
     }
   }
 
-  _draw() {
+  private _draw() {
     this.renderer?.draw(this.center, this.zoom).then((frame) => {
       this._write(frame);
       this.notify(this._getFooter());
@@ -287,7 +287,7 @@ class Mapscii {
     });
   }
 
-  _getFooter() {
+  private _getFooter() {
     // tile = utils.ll2tile(this.center.lon, this.center.lat, this.zoom);
     // `tile: ${utils.digits(tile.x, 3)}, ${utils.digits(tile.x, 3)}   `+
 
@@ -306,7 +306,7 @@ class Mapscii {
     }
   }
 
-  _write(output): void {
+  private _write(output): void {
     config.output.write(output);
   }
 

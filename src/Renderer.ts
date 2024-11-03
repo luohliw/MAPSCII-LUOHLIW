@@ -17,12 +17,26 @@ import TileSource from './TileSource.ts';
 import Tile from './Tile.ts';
 
 export type Layer = {
-  extent: unknown,
-  tree: RBush,
+  extent?: unknown,
+  tree?: RBush<{
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number,
+    feature: Feature,
+  }>,
+  scale?: number,
+  features?: Feature[],
 };
 export type Layers = Record<string, Layer>;
 export type Feature = {
   properties: Record<string, unknown>,
+  // TODO `style` is likely incomplete and incorrect
+  style: {
+    type?: string,
+  },
+  sort: number,
+  sorty: number,
 };
 
 class Renderer {
@@ -86,15 +100,15 @@ class Renderer {
       }));
       await this._renderTiles(tiles);
       return this._getFrame();
-    } catch(e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
     } finally {
       this.isDrawing = false;
       this.lastDrawAt = Date.now();
     }
   }
 
-  _visibleTiles(center, zoom) {
+  private _visibleTiles(center, zoom) {
     const z = utils.baseZoom(zoom);
     center = utils.ll2tile(center.lon, center.lat, z);
     
@@ -137,9 +151,9 @@ class Renderer {
     return tile;
   }
 
-  _getTileFeatures(tile: Tile, zoom: number): Tile {
+  private _getTileFeatures(tile: Tile, zoom: number): Tile {
     const position = tile.position;
-    const layers = {};
+    const layers: Layers = {};
     const drawOrder = this._generateDrawOrder(zoom);
     for (const layerId of drawOrder) {
       const layer = (tile.data.layers || {})[layerId];
@@ -149,12 +163,12 @@ class Renderer {
       
       const scale = layer.extent / utils.tilesizeAtZoom(zoom);
       layers[layerId] = {
-        scale: scale,
+        scale,
         features: layer.tree.search({
           minX: -position.x * scale,
           minY: -position.y * scale,
           maxX: (this.width - position.x) * scale,
-          maxY: (this.height - position.y) * scale
+          maxY: (this.height - position.y) * scale,
         }),
       };
     }
@@ -162,11 +176,11 @@ class Renderer {
     return tile;
   }
 
-  _renderTiles(tiles) {
+  private _renderTiles(tiles) {
     const labels: {
       tile: Tile,
       feature: Feature,
-      scale: unknown,
+      scale: number,
     }[] = [];
     if (tiles.length === 0) return;
     
@@ -200,7 +214,10 @@ class Renderer {
     }
   }
 
-  _getFrame() {
+  private _getFrame(): string {
+    if (!this.canvas) {
+      return '';
+    }
     let frame = '';
     if (!this.lastDrawAt) {
       frame += this.terminal.CLEAR;
@@ -210,11 +227,14 @@ class Renderer {
     return frame;
   }
 
-  featuresAt(x: number, y: number): Feature[] {
-    return this.labelBuffer.featuresAt(x, y);
-  }
+  // featuresAt(x: number, y: number) {
+  //   return this.labelBuffer.featuresAt(x, y);
+  // }
 
-  _drawFeature(tile, feature, scale: number): boolean {
+  private _drawFeature(tile: Tile, feature, scale: number): boolean {
+    if (!this.canvas) {
+      return false;
+    }
     let points, placed;
     if (feature.style.minzoom && tile.zoom < feature.style.minzoom) {
       return false;
@@ -278,7 +298,7 @@ class Renderer {
     return true;
   }
 
-  _scaleAndReduce(tile: Tile, feature: Feature, points: {x: number, y: number}[], scale: number, filter = true) {
+  private _scaleAndReduce(tile: Tile, feature: Feature, points: {x: number, y: number}[], scale: number, filter = true) {
     let lastX;
     let lastY;
     let outside;
@@ -326,7 +346,7 @@ class Renderer {
     }
   }
 
-  _generateDrawOrder(zoom) {
+  private _generateDrawOrder(zoom) {
     if (zoom < 2) {
       return [
         'admin',

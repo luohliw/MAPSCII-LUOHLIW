@@ -14,10 +14,10 @@ import x256 from 'x256';
 import config from './config.ts';
 import utils from './utils.ts';
 import Styler from './Styler.ts';
-import { Feature, Layers } from './Renderer.ts';
+import { Layers } from './Renderer.ts';
 
 class Tile {
-  public layers: Layers;
+  public layers: Layers = {};
   private styler: Styler;
   private tile: VectorTile;
 
@@ -32,7 +32,9 @@ class Tile {
     z: number,
   };
   public zoom: number;
-  public data: unknown;
+  public data: {
+    layers: unknown;
+  };
 
   constructor(styler: Styler) {
     this.styler = styler;
@@ -76,7 +78,7 @@ class Tile {
     const colorCache: Record<string, string> = {};
     for (const name in this.tile.layers) {
       const layer = this.tile.layers[name];
-      const nodes = [];
+      const nodes: unknown[] = [];
       //continue if name is 'water'
       for (let i = 0; i < layer.length; i++) {
         // TODO: caching of similar attributes to avoid looking up the style each time
@@ -159,28 +161,26 @@ class Tile {
     return data;
   }
 
-  private _reduceGeometry(feature: Feature, factor: number): {x: number, y: number}[][] {
-    const results: {x: number, y: number}[][] = [];
-    const geometries = feature.loadGeometry();
-    for (const points of geometries) {
-      const reduced: {x: number, y: number}[] = [];
-      let last;
-      for (const point of points) {
-        const p = {
-          x: Math.floor(point.x / factor),
-          y: Math.floor(point.y / factor)
-        };
-        if (last && last.x === p.x && last.y === p.y) {
-          continue;
-        }
-        reduced.push(last = p);
-      }
-      results.push(reduced);
-    }
-    return results;
-  }
+  // private _reduceGeometry(feature: Feature, factor: number): {x: number, y: number}[][] {
+  //   const results: {x: number, y: number}[][] = [];
+  //   const geometries = feature.loadGeometry();
+  //   for (const points of geometries) {
+  //     const reduced: {x: number, y: number}[] = [];
+  //     let last;
+  //     for (const point of points) {
+  //       const p = {
+  //         x: Math.floor(point.x / factor),
+  //         y: Math.floor(point.y / factor)
+  //       };
+  //       if (last && last.x === p.x && last.y === p.y) {
+  //         continue;
+  //       }
+  //       reduced.push(last = p);
+  //     }
+  //     results.push(reduced);
+  //   }
+  //   return results;
+  // }
 }
-
-Tile.prototype.layers = {};
 
 export default Tile;

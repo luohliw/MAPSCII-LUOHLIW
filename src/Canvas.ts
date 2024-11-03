@@ -89,13 +89,13 @@ class Canvas {
     return true;
   }
 
-  _polygonExtract(vertices, pointId) {
+  private _polygonExtract(vertices, pointId) {
     return [vertices[pointId * 2], vertices[pointId * 2 + 1]];
   }
 
   // Inspired by Alois Zingl's "The Beauty of Bresenham's Algorithm"
   // -> http://members.chello.at/~easyfilter/bresenham.html
-  _line(x0, y0, x1, y1, width, color) {
+  private _line(x0, y0, x1, y1, width, color) {
     // Fall back to width-less bresenham algorithm if we dont have a width
     if (!(width = Math.max(0, width - 1))) {
       return bresenham(x0, y0, x1, y1, (x, y) => {
@@ -149,7 +149,7 @@ class Canvas {
     /* eslint-enable */
   }
 
-  _filledRectangle(x, y, width, height, color) {
+  private _filledRectangle(x, y, width, height, color) {
     const pointA = [x, y];
     const pointB = [x + width, y];
     const pointC = [x, y + height];
@@ -158,12 +158,12 @@ class Canvas {
     this._filledTriangle(pointC, pointB, pointD, color);
   }
 
-  _bresenham(pointA, pointB) {
+  private _bresenham(pointA, pointB) {
     return bresenham(pointA[0], pointA[1], pointB[0], pointB[1]);
   }
 
   // Draws a filled triangle
-  _filledTriangle(pointA, pointB, pointC, color) {
+  private _filledTriangle(pointA, pointB, pointC, color) {
     const a = this._bresenham(pointB, pointC);
     const b = this._bresenham(pointA, pointC);
     const c = this._bresenham(pointA, pointB);

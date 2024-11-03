@@ -60,7 +60,7 @@ class Styler {
     return false;
   }
 
-  _replaceConstants(constants, tree: RBush): void {
+  private _replaceConstants(constants, tree: RBush): void {
     for (const id in tree) {
       const node = tree[id];
       switch (typeof node) {
@@ -79,7 +79,7 @@ class Styler {
   }
 
   //TODO Better translation of the long cases.
-  _compileFilter(filter): (feature: Feature) => boolean {
+  private _compileFilter(filter): (feature: Feature) => boolean {
     let filters;
     switch (filter != null ? filter[0] : void 0) {
       case 'all':

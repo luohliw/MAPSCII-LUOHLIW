@@ -7,9 +7,16 @@
 */
 import RBush from 'rbush';
 import stringWidth from 'string-width';
+import { Feature } from './Renderer.ts';
 
 export default class LabelBuffer {
-  private tree: RBush;
+  private tree: RBush<{
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number,
+    feature: Feature,
+  }>;
   private margin: number;
 
   constructor() {
@@ -31,29 +38,30 @@ export default class LabelBuffer {
     const point = this.project(x, y);
 
     if (this._hasSpace(text, point[0], point[1])) {
-      return this.tree.insert({
+      this.tree.insert({
         ...this._calculateArea(text, point[0], point[1], margin),
         feature,
       });
+      return true;
     } else {
       return false;
     }
   }
 
-  featuresAt(x: number, y: number): void {
-    this.tree.search({minX: x, maxX: x, minY: y, maxY: y});
-  }
+  // featuresAt(x: number, y: number) {
+  //   return this.tree.search({minX: x, maxX: x, minY: y, maxY: y});
+  // }
 
-  _hasSpace(text: string, x: number, y: number): boolean {
+  private _hasSpace(text: string, x: number, y: number): boolean {
     return !this.tree.collides(this._calculateArea(text, x, y));
   }
 
-  _calculateArea(text: string, x: number, y: number, margin = 0) {
+  private _calculateArea(text: string, x: number, y: number, margin = 0) {
     return {
-      minX: x-margin,
-      minY: y-margin / 2,
-      maxX: x+margin + stringWidth(text),
-      maxY: y+margin / 2,
+      minX: x - margin,
+      minY: y - margin / 2,
+      maxX: x + margin + stringWidth(text),
+      maxY: y + margin / 2,
     };
   }
 };
